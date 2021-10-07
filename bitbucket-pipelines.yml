@@ -1,0 +1,30 @@
+image: 
+  name: node:10.15.3
+  run-as-user: 0
+
+pipelines:
+  default:
+    - step:
+        script: 
+           - echo "This Is the Way"
+  custom:
+    PRODUCT Smoke Test (QA Env):
+      - step:
+         name: COI Smoke Tests
+         caches: 
+           - node
+         script:
+          # First we are going to install dependencies that chrome and chromedriver will need
+           - apt-get update && apt-get install -yq libnss3 unzip openjdk-8-jre-headless xvfb libxi6 libgconf-2-4
+          # Install chrome browser as it does not exist with the node image
+           - curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add
+           - echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
+           - apt-get -y update
+           - apt-get -y install google-chrome-stable
+           - npm install
+           - npm audit fix
+           - npm run webdriver-clean
+           - npm run webdriver-update
+           - npm run tsc ./pages/product/*
+           - npm run tsc ./specs/smoketests_spec.ts
+           - ./node_modules/.bin/protractor conf/product_conf.js --params.url.env='https://env.domain.com'
